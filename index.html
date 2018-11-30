@@ -1,0 +1,265 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Wandering Ambassador</title>
+
+	<!-- Here go all the libraries -->
+	 <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script> -->
+	<script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/jquery-ui-1.10.3/ui/jquery-ui.js"></script>
+	<script type="text/javascript" src="js/jquery-touch.js"></script>
+
+	<!-- Here go the JQuery Scripts -->
+	<script type="text/javascript" src="js/motion.js"></script>
+	<script type="text/javascript" src="js/sensors.js"></script>
+	<script type="text/javascript" src="js/ajax.js"></script>
+	<script type="text/javascript" src="js/controls.js"></script>
+	<script type="text/javascript" src="js/utility.js"></script>
+
+	<!-- Here goes all the styling -->
+    <link href="css/jquery-ui.css" rel="stylesheet"/>
+    <link href="css/main.css" rel="stylesheet"/>
+
+    <script>
+        $(document).ready(function () {
+			//Global variables here
+			window.sticky = false;
+			window.moving = false;
+			window.currentDirection = 'none';
+			window.angle = 45;
+			window.duration = 2;
+			window.holding = 0;
+
+			//All init functions go here
+
+            $("#tabs").tabs();
+            $("#navigation_accordion").accordion();
+
+			$("#slider").slider({
+				value: 45,
+				min: 45,
+				max: 180,
+				step: 45,
+				slide: function(event,ui){
+					window.angle = ui.value;
+					$.fn.trackHistory("Changed angle to "+window.angle);
+					$("#degrees").val(ui.value+" degrees");
+						xml_http_post("web/index.html", "a-"+window.angle, req_handler);
+				}
+			});
+			$("#slider-duration").slider({
+				value: 2,
+				min: 1,
+				max: 5,
+				step: 1,
+				slide: function(event,ui){
+					window.duration = ui.value;
+					$.fn.trackHistory("Changed duration to "+window.duration);
+					$("#seconds").val(ui.value+" seconds");
+					xml_http_post("web/index.html", "d-"+window.duration, req_handler);
+				}
+			});
+
+			$(".joystick").draggable({
+                revert: true,
+                containment: "parent"
+            });
+            $(".tab-container").height($(window).height()*.8);
+
+			$.fn.addEffects();
+			$.fn.sensorReactToTouch();
+			$.fn.controlSettings();
+			$.fn.clearHistory();
+        });
+    </script>
+</head>
+<body>
+    <div>
+        <div id="tabs">
+
+            <ul>
+                <li><a href="#nav-tab">Navigation</a></li>
+                <li><a href="#sensors-tab">Sensors</a></li>
+                <li><a href="#map-tab">Map</a></li>
+                <li><a href="#team-info-tab">Team info</a></li>
+                <li><a href="#other-tab">Tentative</a></li>
+            </ul>
+
+            <div id="nav-tab" class="tab-container">
+                <div id="nav-contents">
+                <div class="side-menu" >
+                    <div id="navigation_accordion">
+                    <h3>Control settings</h3>
+                    <div class="accordion_content_box">
+						   	<div>Button modes </div>
+							<input type="radio" name="Hold" value="hold-control-value" /> Hold action <br/>
+                      		<input type="radio" name="Hold" value="release-control-value" checked="checked"/> Perform and hault<br/>
+                      		 <br/>
+                      		<label for="seconds">Action duration: </label>
+							<input type="text" id="seconds" disabled="disabled" value="2 seconds" />
+							<div id="slider-duration"></div><br/>
+							<label for="degrees">Rotation Angle: </label>
+							<input type="text" id="degrees" disabled="disabled" value="45 degrees" />
+							<div id="slider"></div>
+                      		<!-- <input type="button" name="save" value="Save Changes"/> -->
+					</div>
+                    <h3>Automation</h3>
+                    <div class="accordion_content_box">
+                  	<div>On object detection</div>
+                  	<select name="perform-action">
+						<option>Hault</option>
+						<option>Continue</option>
+						<option>Rotate CCW by 45</option>
+						<option>Rotate CW by 45</option>
+						<option>Face opposite direction</option>
+                  	</select>
+                  	<div>If distance is </div>
+                  	<select name="perform-action-on-distance">
+						<option>255-100 inches</option>
+						<option>100-50 inches</option>
+						<option>50-10 inches</option>
+						<option>less than 10 inches</option>
+                  	</select>
+                    </div>
+                    <h3>Command history</h3>
+                    <div class="accordion_content_box">
+						<ol id="executed-command-list">
+							<li>Started robot</li>
+						</ol>
+                    </div>
+                    <h3>Other options</h3>
+                    <div class="accordion_content_box">
+                        This section will contain any other data we need to address
+                    </div>
+					</div>
+					<div id="last-command-window"></div>
+
+                </div>
+                <div id="controller-buttons-container">
+                    <div id="top" class="horizontal_block hover-area">
+                    	<div id="forward-button" class="horizontal-button button">
+                    		<img src="Media/ForwardButton.png" width="100%" height="100%"/>
+                    	</div>
+                    </div>
+                    <div id="left" class="vertical_block left hover-area">
+	                    <div id="ccw-button" class="horizontal-button button">
+	                    <img src="Media/CounterCW.png" width="100%" height="100%"/>
+	                    </div>
+                    </div>
+                    <!--<div class="joystick"> Drag me</div>-->
+                    <div id="right" class="vertical_block right hover-area">
+                    	<div id="cw-button" class="horizontal-button button">
+                    	<img src="Media/ClockwiseArrow.png" width="100%" height="100%"/>
+                    	</div>
+                    </div>
+                    <div id="bottom" class="horizontal_block hover-area">
+                        <div id="backward-button" class="horizontal-button button">
+                        	<img src="Media/BackwardButton.png" width="100%" height="100%"/>
+                        </div>
+                    </div>
+                   </div>
+                     <div id="hault_section">
+						<div id="stop-button">
+							<img src="Media/StopSign.png" width="200px" height="200px"/>
+						</div>
+					 </div>
+                 </div>
+
+            </div>
+            <div id="sensors-tab"  class="tab-container">
+				<div id="sensor-one" class="sensor">
+					<div class="sensor-name">SONAR 1</div>
+					<div class="sensor-pic">
+						<img src="Media/Bullseye.png" width="100%" height="100%"/>
+					</div>
+					<div class="sensor-description">
+						<div class="desc-item">TYPE: Sonar</div>
+						<div class="desc-item"></div>
+						<div class="desc-item">STAT: Active</div>
+						<div class="desc-item"></div>
+
+					</div>
+					<div class="reading">READING:</div>
+					<div id="sensor-1" class="sensor-reading">
+						<div class="reading-data left-block sensor-reading-1">0.0</div>
+						<div class="reading-units right-block">inches</div>
+					</div>
+					<div class="update-sensor-button">
+						<div id="s1" class="update-button-label update-sensor">
+							Update
+						</div>
+					</div>
+				</div>
+				<div id="sensor-two" class="sensor">
+					<div class="sensor-name">SONAR 2</div>
+					<div class="sensor-pic">
+						<img src="Media/Bullseye.png" width="100%" height="100%"/>
+					</div>
+					<div class="sensor-description">
+						<div class="desc-item">TYPE: Sonar</div>
+						<div class="desc-item"></div>
+						<div class="desc-item">STAT: Active</div>
+						<div class="desc-item"></div>
+					</div>
+					<div class="reading">READING:</div>
+					<div id="sensor-2" class="sensor-reading">
+						<div class="reading-data left-block sensor-reading-2">0.0</div>
+						<div class="reading-units right-block">inches</div>
+					</div>
+					<div class="update-sensor-button">
+						<div id="s2" class="update-button-label update-sensor">Update</div>
+					</div>
+				</div>
+				<div id="sensor-three" class="sensor">
+					<div class="sensor-name">SONAR 3</div>
+					<div class="sensor-pic">
+						<img src="Media/Bullseye.png" width="100%" height="100%"/>
+					</div>
+					<div class="sensor-description">
+						<div class="desc-item">TYPE: Sonar</div>
+						<div class="desc-item"></div>
+						<div class="desc-item">STAT: Active</div>
+						<div class="desc-item"></div>
+					</div>
+					<div class="reading">READING:</div>
+					<div id="sensor-3" class="sensor-reading">
+					<div class="reading-data left-block sensor-reading-3">0.0</div>
+					<div class="reading-units right-block">inches</div>
+					</div>
+					<div class="update-sensor-button">
+						<div id="s3" class="update-button-label update-sensor">Update</div>
+					</div>
+				</div>
+				<!--
+				<div id="sensor-four" class="sensor">
+					<div class="sensor-name">SONAR 4</div>
+					<div class="sensor-pic">
+						<img src="Media/SensorPic.png" width="100%" height="100%"/>
+					</div>
+					<div class="sensor-description">
+						<div class="desc-item">TYPE:</div>
+						<div class="desc-item">Sonar</div>
+						<div class="desc-item">STATUS</div>
+						<div class="desc-item">Active</div>
+					</div>
+					<div class="reading">READING:</div>
+						<div id="sensor-4" class="sensor-reading"></div>
+						<div class="update-sensor-button">
+						<div class="update-button-label">Update</div>
+					</div>
+				</div> -->
+			</div>
+            <div id="map-tab"  class="tab-container">
+			</div>
+            <div id="team-info-tab"  class="tab-container">
+                <p>This page will show Armando's info ;-)</p>
+            </div>
+            <div id="other-tab"  class="tab-container">
+                <p>This is a tentative tab</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
