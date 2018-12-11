@@ -1,4 +1,4 @@
-﻿body {
+body {
 }
 
 .accordion_basic {
@@ -61,7 +61,7 @@ margin: 0 0 0 0;
 	margin-left: 5%;
 	min-width: 160px;
 	min-height: 160px;
-	
+
 }
 
 .joystick {
@@ -246,5 +246,5 @@ float: right;
 	height: 50%;
 	width: 100%;
 	text-align: center;
-	
+
 }
